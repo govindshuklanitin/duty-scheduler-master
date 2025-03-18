@@ -4,647 +4,333 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Duty Schedule Generator - BAGASSE YARD</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary-color: #1e3a8a;
-            --secondary-color: #3b82f6;
-            --accent-color: #f97316;
-            --light-color: #f8fafc;
-            --dark-color: #1e293b;
-            --success-color: #10b981;
-            --danger-color: #ef4444;
-            --border-radius: 0.5rem;
-            --box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        .gradient-header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
         }
-        
-        body {
-            background-color: var(--light-color);
-            font-family: 'Poppins', sans-serif;
-            color: var(--dark-color);
-            line-height: 1.6;
-        }
-        
-        .container {
-            max-width: 1280px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        .header {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            padding: 30px 0;
-            margin-bottom: 30px;
-            border-radius: var(--border-radius);
-            box-shadow: var(--box-shadow);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .header::before {
-            content: "";
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(
-                rgba(255, 255, 255, 0.1),
-                rgba(255, 255, 255, 0.05)
-            );
-            transform: rotate(30deg);
-            z-index: 1;
-        }
-        
-        .header-content {
-            position: relative;
-            z-index: 2;
-        }
-        
-        .card {
-            background-color: white;
-            border-radius: var(--border-radius);
-            box-shadow: var(--box-shadow);
-            border: none;
-            margin-bottom: 20px;
-            overflow: hidden;
-            transition: transform 0.3s ease;
-        }
-        
-        .card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .card-header {
-            background-color: var(--primary-color);
-            color: white;
+        .shift-cell {
+            width: 40px;
+            text-align: center;
             font-weight: 600;
-            padding: 15px 20px;
         }
-        
-        .schedule-table {
-            background-color: white;
-            border-radius: var(--border-radius);
-            box-shadow: var(--box-shadow);
-            overflow: auto;
+        .shift-A { color: #3b82f6; }
+        .shift-B { color: #8b5cf6; }
+        .shift-C { color: #f97316; }
+        .shift-G { color: #14b8a6; }
+        .shift-R { color: #64748b; }
+        .shift-badge {
+            padding: 4px 8px;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
         }
-        
-        .table {
-            margin-bottom: 0;
-        }
-        
-        .table th {
-            background-color: var(--primary-color);
-            color: white;
-            font-weight: 500;
-            text-align: center;
-            vertical-align: middle;
-            padding: 12px;
-        }
-        
-        .table td {
-            text-align: center;
-            vertical-align: middle;
-            padding: 10px;
-        }
-        
-        .table-hover tbody tr:hover {
-            background-color: rgba(59, 130, 246, 0.05);
-        }
-        
-        .table tbody tr:nth-child(even) {
-            background-color: rgba(241, 245, 249, 0.5);
-        }
-        
-        .btn {
-            font-weight: 500;
-            padding: 8px 16px;
-            border-radius: 0.375rem;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-primary {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-        
-        .btn-primary:hover {
-            background-color: #1e40af;
-            border-color: #1e40af;
-            transform: translateY(-2px);
-        }
-        
-        .btn-success {
-            background-color: var(--success-color);
-            border-color: var(--success-color);
-        }
-        
-        .btn-success:hover {
-            background-color: #059669;
-            border-color: #059669;
-            transform: translateY(-2px);
-        }
-        
-        .btn-danger {
-            background-color: var(--danger-color);
-            border-color: var(--danger-color);
-        }
-        
-        .btn-danger:hover {
-            background-color: #dc2626;
-            border-color: #dc2626;
-        }
-        
-        .form-control, .form-select {
-            padding: 10px 15px;
-            border-radius: 0.375rem;
-            border: 1px solid #d1d5db;
-            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-        }
-        
-        .form-control:focus, .form-select:focus {
-            border-color: var(--secondary-color);
-            box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25);
-        }
-        
-        .form-label {
-            font-weight: 500;
-            margin-bottom: 0.5rem;
-            color: #4b5563;
-        }
-        
-        .employee-list {
-            max-height: 300px;
-            overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: var(--secondary-color) #f1f5f9;
-        }
-        
-        .employee-list::-webkit-scrollbar {
-            width: 8px;
-        }
-        
-        .employee-list::-webkit-scrollbar-track {
-            background: #f1f5f9;
-        }
-        
-        .employee-list::-webkit-scrollbar-thumb {
-            background-color: var(--secondary-color);
-            border-radius: 20px;
-        }
-        
-        .badge {
-            padding: 5px 10px;
-            border-radius: 50px;
+        .shift-badge i {
             font-size: 0.75rem;
         }
-        
-        .badge-shift-A {
-            background-color: #3b82f6;
-            color: white;
-        }
-        
-        .badge-shift-B {
-            background-color: #8b5cf6;
-            color: white;
-        }
-        
-        .badge-shift-C {
-            background-color: #f97316;
-            color: white;
-        }
-        
-        .badge-shift-G {
-            background-color: #14b8a6;
-            color: white;
-        }
-        
-        .badge-shift-R {
-            background-color: #64748b;
-            color: white;
-        }
-        
-        .loading {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 9999;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .loading-content {
-            background: white;
-            padding: 20px;
-            border-radius: var(--border-radius);
-            text-align: center;
-        }
-        
-        .spinner-border {
-            width: 3rem; 
-            height: 3rem;
-            color: var(--primary-color);
-        }
-        
-        @media (max-width: 768px) {
-            .container {
-                padding: 10px;
-            }
-            
-            .card-header {
-                padding: 10px 15px;
-            }
-            
-            .btn {
-                padding: 6px 12px;
-            }
-            
-            .form-control, .form-select {
-                padding: 8px 12px;
-            }
-            
-            .table th, .table td {
-                padding: 8px;
-                font-size: 0.9rem;
-            }
-        }
-        
-        /* Tooltip styles */
-        .tooltip-container {
-            position: relative;
-            display: inline-block;
-        }
-        
-        .tooltip-text {
-            visibility: hidden;
-            width: 120px;
-            background-color: var(--dark-color);
-            color: white;
-            text-align: center;
-            border-radius: 6px;
-            padding: 5px;
-            position: absolute;
-            z-index: 1;
-            bottom: 125%;
-            left: 50%;
-            margin-left: -60px;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        
-        .tooltip-container:hover .tooltip-text {
-            visibility: visible;
-            opacity: 1;
-        }
-
-        /* Shift key explanation */
-        .shift-key {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: center;
-            margin-bottom: 20px;
-        }
-        
-        .shift-badge {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .custom-tooltip {
-            position: relative;
-            display: inline-block;
-            cursor: pointer;
-        }
-        
-        .custom-tooltip .tooltip-content {
-            visibility: hidden;
-            background-color: #333;
-            color: #fff;
-            text-align: center;
-            border-radius: 6px;
-            padding: 5px 10px;
-            position: absolute;
-            z-index: 1;
-            bottom: 125%;
-            left: 50%;
-            transform: translateX(-50%);
-            opacity: 0;
-            transition: opacity 0.3s;
-            width: max-content;
-            max-width: 200px;
-        }
-        
-        .custom-tooltip:hover .tooltip-content {
-            visibility: visible;
-            opacity: 1;
+        .badge-A { background-color: #dbeafe; color: #1e40af; }
+        .badge-B { background-color: #ede9fe; color: #5b21b6; }
+        .badge-C { background-color: #fff7ed; color: #c2410c; }
+        .badge-G { background-color: #ccfbf1; color: #0f766e; }
+        .badge-R { background-color: #f1f5f9; color: #334155; }
+        .hover-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <div class="header-content text-center">
-                <h1><i class="fas fa-calendar-alt me-2"></i> BAGASSE YARD</h1>
-                <h3>Duty Schedule Generator</h3>
-            </div>
+<body class="bg-gray-50 min-h-screen">
+    <div class="gradient-header text-white py-8 px-4 mb-8">
+        <div class="container mx-auto text-center">
+            <h1 class="text-4xl font-bold mb-2">
+                <i class="fas fa-calendar-alt mr-2"></i>
+                BAGASSE YARD
+            </h1>
+            <p class="text-xl opacity-90">Duty Schedule Generator</p>
         </div>
+    </div>
 
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="fas fa-cog me-2"></i> Schedule Settings</h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <label for="month" class="form-label">Month</label>
-                        <select class="form-select" id="month">
-                            <option value="1">January</option>
-                            <option value="2">February</option>
-                            <option value="3">March</option>
-                            <option value="4">April</option>
-                            <option value="5">May</option>
-                            <option value="6">June</option>
-                            <option value="7">July</option>
-                            <option value="8">August</option>
-                            <option value="9">September</option>
-                            <option value="10">October</option>
-                            <option value="11">November</option>
-                            <option value="12">December</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="year" class="form-label">Year</label>
-                        <input type="number" class="form-control" id="year" value="2025">
-                    </div>
+    <div class="container mx-auto px-4">
+        <!-- Shift Legend -->
+        <div class="bg-white p-6 rounded-lg shadow mb-8 hover-card">
+            <h2 class="text-xl font-semibold text-blue-900 mb-4">
+                <i class="fas fa-info-circle mr-2"></i>
+                Shift Information
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                <div class="shift-badge badge-A">
+                    <i class="fas fa-sun"></i>
+                    A - Morning (06:00-14:00)
+                </div>
+                <div class="shift-badge badge-B">
+                    <i class="fas fa-cloud-sun"></i>
+                    B - Afternoon (14:00-22:00)
+                </div>
+                <div class="shift-badge badge-C">
+                    <i class="fas fa-moon"></i>
+                    C - Night (22:00-06:00)
+                </div>
+                <div class="shift-badge badge-G">
+                    <i class="fas fa-briefcase"></i>
+                    G - General (09:00-17:00)
+                </div>
+                <div class="shift-badge badge-R">
+                    <i class="fas fa-bed"></i>
+                    R - Rest Day
                 </div>
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="fas fa-user-plus me-2"></i> Add Employee</h5>
-            </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-3">
-                        <label for="empName" class="form-label">Name</label>
-                        <input type="text" class="form-control" id="empName" placeholder="Enter name">
-                    </div>
-                    <div class="col-md-2">
-                        <label for="empCode" class="form-label">Code No.</label>
-                        <input type="text" class="form-control" id="empCode" placeholder="Enter code">
-                    </div>
-                    <div class="col-md-2">
-                        <label for="empPost" class="form-label">Post</label>
-                        <select class="form-select" id="empPost">
-                            <option value="SUPERVISOR">Supervisor</option>
-                            <option value="HELPER">Helper</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label for="empShift" class="form-label">First Shift</label>
-                        <select class="form-select" id="empShift">
-                            <option value="A">A (06:00-14:00)</option>
-                            <option value="B">B (14:00-22:00)</option>
-                            <option value="C">C (22:00-06:00)</option>
-                            <option value="G">G (General)</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label for="empRestDay" class="form-label">Rest Day</label>
-                        <select class="form-select" id="empRestDay">
-                            <option value="0">Sunday</option>
-                            <option value="1">Monday</option>
-                            <option value="2">Tuesday</option>
-                            <option value="3">Wednesday</option>
-                            <option value="4">Thursday</option>
-                            <option value="5">Friday</option>
-                            <option value="6">Saturday</option>
-                        </select>
-                    </div>
-                    <div class="col-md-1">
-                        <label class="form-label">&nbsp;</label>
-                        <button class="btn btn-primary w-100" onclick="addEmployee()">
-                            <i class="fas fa-plus"></i>
-                        </button>
-                    </div>
+        <!-- Post Selection Section -->
+        <div id="postSelection" class="bg-white p-6 rounded-lg shadow mb-8 hover-card">
+            <h2 class="text-xl font-semibold text-blue-900 mb-4">
+                <i class="fas fa-users-cog mr-2"></i>
+                Select Post
+            </h2>
+            <div class="flex gap-4 mb-4">
+                <div class="flex-1">
+                    <label for="postSelect" class="block text-sm font-medium text-gray-700 mb-2">Choose a post type:</label>
+                    <select id="postSelect" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Select a post...</option>
+                        <option value="SUPERVISOR">Supervisor</option>
+                        <option value="OPERATOR">Operator</option>
+                        <option value="TECHNICIAN">Technician</option>
+                    </select>
                 </div>
-
-                <div class="employee-list mt-4">
-                    <h5><i class="fas fa-users me-2"></i> Added Employees</h5>
-                    <table class="table table-bordered table-hover">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Code</th>
-                                <th>Post</th>
-                                <th>First Shift</th>
-                                <th>Rest Day</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="employeeList">
-                        </tbody>
-                    </table>
+                <div class="flex items-end">
+                    <button onclick="selectPost()" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors flex items-center">
+                        <i class="fas fa-arrow-right mr-2"></i>
+                        Create Schedule
+                    </button>
                 </div>
             </div>
         </div>
 
-        <div class="d-flex justify-content-between mb-4">
-            <button id="generateBtn" class="btn btn-primary" onclick="generateSchedule()">
-                <i class="fas fa-calendar-alt me-2"></i>Generate Schedule
-            </button>
-            <div>
-                <button id="debugBtn" class="btn btn-outline-secondary me-2" onclick="exportPDF()" disabled>
-                    <i class="fas fa-file-pdf me-2"></i>Download as PDF
-                </button>
-                <button id="exportBtn" class="btn btn-success" onclick="exportSchedule()" disabled>
-                    <i class="fas fa-file-export me-2"></i>Export to Excel
+        <!-- Employee Form Section -->
+        <div id="employeeForm" class="bg-white p-6 rounded-lg shadow mb-8 hover-card hidden">
+            <h2 class="text-xl font-semibold text-blue-900 mb-4">
+                <i class="fas fa-user-plus mr-2"></i>
+                Add Employee
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700 mb-2">Employee Name:</label>
+                    <input type="text" id="name" placeholder="Enter full name" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="code" class="block text-sm font-medium text-gray-700 mb-2">Employee Code:</label>
+                    <input type="text" id="code" placeholder="Enter code number" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="startShift" class="block text-sm font-medium text-gray-700 mb-2">First Shift:</label>
+                    <select id="startShift" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="A">A - Morning (06:00-14:00)</option>
+                        <option value="B">B - Afternoon (14:00-22:00)</option>
+                        <option value="C">C - Night (22:00-06:00)</option>
+                        <option value="G">G - General (09:00-17:00)</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="restDay" class="block text-sm font-medium text-gray-700 mb-2">Rest Day:</label>
+                    <select id="restDay" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="0">Sunday</option>
+                        <option value="1">Monday</option>
+                        <option value="2">Tuesday</option>
+                        <option value="3">Wednesday</option>
+                        <option value="4">Thursday</option>
+                        <option value="5">Friday</option>
+                        <option value="6">Saturday</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex justify-end mt-6">
+                <button onclick="addEmployee()" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors flex items-center">
+                    <i class="fas fa-plus mr-2"></i>
+                    Add Employee
                 </button>
             </div>
         </div>
 
-        <div class="shift-key card mb-4" id="shiftKeyContainer" style="display: none;">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i> Shift Key</h5>
-            </div>
-            <div class="card-body">
-                <div class="d-flex flex-wrap justify-content-center gap-3">
-                    <div class="shift-badge">
-                        <span class="badge badge-shift-A">A</span>
-                        <span>06:00-14:00</span>
-                    </div>
-                    <div class="shift-badge">
-                        <span class="badge badge-shift-B">B</span>
-                        <span>14:00-22:00</span>
-                    </div>
-                    <div class="shift-badge">
-                        <span class="badge badge-shift-C">C</span>
-                        <span>22:00-06:00</span>
-                    </div>
-                    <div class="shift-badge">
-                        <span class="badge badge-shift-G">G</span>
-                        <span>General</span>
-                    </div>
-                    <div class="shift-badge">
-                        <span class="badge badge-shift-R">R</span>
-                        <span>Rest</span>
-                    </div>
-                </div>
+        <!-- Employee List Section -->
+        <div id="employeeList" class="bg-white p-6 rounded-lg shadow mb-8 hover-card hidden">
+            <h2 class="text-xl font-semibold text-blue-900 mb-4">
+                <i class="fas fa-list mr-2"></i>
+                Added Employees
+            </h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead>
+                        <tr class="bg-blue-900 text-white">
+                            <th class="p-3 text-left">Name</th>
+                            <th class="p-3 text-left">Code</th>
+                            <th class="p-3 text-left">Start Shift</th>
+                            <th class="p-3 text-left">Rest Day</th>
+                            <th class="p-3 text-left">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="employeeTableBody" class="divide-y divide-gray-200"></tbody>
+                </table>
             </div>
         </div>
 
-        <div class="schedule-table" id="scheduleContainer" style="display: none;">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-table me-2"></i> Duty Schedule</h5>
+        <!-- Schedule Controls Section -->
+        <div id="scheduleControls" class="bg-white p-6 rounded-lg shadow mb-8 hover-card hidden">
+            <h2 class="text-xl font-semibold text-blue-900 mb-4">
+                <i class="fas fa-cog mr-2"></i>
+                Generate Schedule
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <label for="month" class="block text-sm font-medium text-gray-700 mb-2">Select Month:</label>
+                    <select id="month" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></select>
                 </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-hover" id="scheduleTable">
-                        </table>
-                    </div>
+                <div>
+                    <label for="year" class="block text-sm font-medium text-gray-700 mb-2">Select Year:</label>
+                    <select id="year" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></select>
                 </div>
+            </div>
+            <div class="flex justify-end">
+                <button onclick="generateSchedule()" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors flex items-center">
+                    <i class="fas fa-calendar-alt mr-2"></i>
+                    Generate Schedule
+                </button>
+            </div>
+        </div>
+
+        <!-- Schedule Display Section -->
+        <div id="scheduleDisplay" class="bg-white p-6 rounded-lg shadow mb-8 hover-card hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-semibold text-blue-900">
+                    <i class="fas fa-table mr-2"></i>
+                    Generated Schedule
+                </h2>
+                <div class="flex gap-4">
+                    <button onclick="exportPDF()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors flex items-center">
+                        <i class="fas fa-file-pdf mr-2"></i>
+                        Download PDF
+                    </button>
+                    <button onclick="exportExcel()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors flex items-center">
+                        <i class="fas fa-file-excel mr-2"></i>
+                        Export to Excel
+                    </button>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table id="scheduleTable" class="min-w-full border-collapse"></table>
             </div>
         </div>
     </div>
 
-    <div class="loading" id="loadingIndicator">
-        <div class="loading-content">
-            <div class="spinner-border mb-3" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-            <p class="mb-0" id="loadingText">Generating schedule...</p>
-        </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let employees = [];
-        const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const shiftMap = {
-            'A': { text: 'Morning (06:00-14:00)', class: 'badge-shift-A' },
-            'B': { text: 'Afternoon (14:00-22:00)', class: 'badge-shift-B' },
-            'C': { text: 'Night (22:00-06:00)', class: 'badge-shift-C' },
-            'G': { text: 'General', class: 'badge-shift-G' },
-            'R': { text: 'Rest Day', class: 'badge-shift-R' }
-        };
+        let currentPost = '';
+        let schedule = null;
 
-        window.onload = function() {
-            const now = new Date();
-            document.getElementById('month').value = now.getMonth() + 1;
-            document.getElementById('year').value = now.getFullYear();
-            
-            // Set up enter key listener for adding employees
-            document.getElementById('empCode').addEventListener('keyup', function(event) {
-                if (event.key === 'Enter') {
-                    addEmployee();
-                }
+        // Initialize month and year dropdowns
+        function initializeDropdowns() {
+            const monthSelect = document.getElementById('month');
+            const yearSelect = document.getElementById('year');
+            const months = ['January', 'February', 'March', 'April', 'May', 'June', 
+                          'July', 'August', 'September', 'October', 'November', 'December'];
+            const currentYear = new Date().getFullYear();
+
+            // Populate months
+            months.forEach((month, index) => {
+                const option = new Option(month, index + 1);
+                monthSelect.add(option);
             });
-        };
+            monthSelect.value = new Date().getMonth() + 1;
 
+            // Populate years (current year + next 2 years)
+            for (let year = currentYear; year <= currentYear + 2; year++) {
+                const option = new Option(year, year);
+                yearSelect.add(option);
+            }
+            yearSelect.value = currentYear;
+        }
+
+        // Handle post selection
+        function selectPost() {
+            const postSelect = document.getElementById('postSelect');
+            currentPost = postSelect.value;
+            
+            if (!currentPost) {
+                alert('Please select a post');
+                return;
+            }
+
+            // Show relevant sections and reset employees
+            document.getElementById('employeeForm').classList.remove('hidden');
+            document.getElementById('employeeList').classList.remove('hidden');
+            document.getElementById('scheduleControls').classList.remove('hidden');
+            document.getElementById('postSelection').classList.add('hidden');
+            
+            employees = [];
+            updateEmployeeTable();
+        }
+
+        // Add new employee
         function addEmployee() {
-            const name = document.getElementById('empName').value.trim();
-            const code = document.getElementById('empCode').value.trim();
-            const post = document.getElementById('empPost').value;
-            const shift = document.getElementById('empShift').value;
-            const restDay = document.getElementById('empRestDay').value;
+            const name = document.getElementById('name').value;
+            const code = document.getElementById('code').value;
+            const startShift = document.getElementById('startShift').value;
+            const restDay = document.getElementById('restDay').value;
 
             if (!name || !code) {
-                showAlert('Please fill in all fields', 'danger');
-                return;
-            }
-
-            // Check for duplicate name or code
-            const isDuplicateName = employees.some(emp => emp.name.toLowerCase() === name.toLowerCase());
-            const isDuplicateCode = employees.some(emp => emp.code === code);
-            
-            if (isDuplicateName) {
-                showAlert('An employee with this name already exists', 'warning');
-                return;
-            }
-            
-            if (isDuplicateCode) {
-                showAlert('An employee with this code already exists', 'warning');
+                alert('Please fill in all fields');
                 return;
             }
 
             const employee = {
                 name: name,
                 code: code,
-                post: post,
-                start_shift: shift,
+                post: currentPost,
+                start_shift: startShift,
                 rest_day: parseInt(restDay)
             };
 
             employees.push(employee);
-            updateEmployeeList();
-            clearEmployeeForm();
-            showAlert('Employee added successfully', 'success');
-            
-            // Focus back on the name field for quick entry of multiple employees
-            document.getElementById('empName').focus();
-        }
-        
-        function showAlert(message, type) {
-            const alertDiv = document.createElement('div');
-            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-            alertDiv.innerHTML = `
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            `;
-            
-            // Insert at the top of the container
-            const container = document.querySelector('.container');
-            container.insertBefore(alertDiv, container.firstChild);
-            
-            // Auto dismiss after 3 seconds
-            setTimeout(() => {
-                alertDiv.classList.remove('show');
-                setTimeout(() => alertDiv.remove(), 300);
-            }, 3000);
+            updateEmployeeTable();
+
+            // Clear form
+            document.getElementById('name').value = '';
+            document.getElementById('code').value = '';
         }
 
-        function clearEmployeeForm() {
-            document.getElementById('empName').value = '';
-            document.getElementById('empCode').value = '';
-            document.getElementById('empPost').selectedIndex = 0;
-            document.getElementById('empShift').selectedIndex = 0;
-            document.getElementById('empRestDay').selectedIndex = 0;
-        }
-
-        function removeEmployee(index) {
-            employees.splice(index, 1);
-            updateEmployeeList();
-            showAlert('Employee removed', 'info');
-        }
-
-        function updateEmployeeList() {
-            const tbody = document.getElementById('employeeList');
+        // Update employee table
+        function updateEmployeeTable() {
+            const tbody = document.getElementById('employeeTableBody');
             tbody.innerHTML = '';
 
             employees.forEach((emp, index) => {
                 const tr = document.createElement('tr');
+                tr.className = index % 2 === 0 ? 'bg-gray-50' : 'bg-white';
+                
+                const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                const restDayName = dayNames[emp.rest_day];
+
+                const shiftBadgeClass = `shift-badge badge-${emp.start_shift}`;
+                const shiftIcon = getShiftIcon(emp.start_shift);
+
                 tr.innerHTML = `
-                    <td>${emp.name}</td>
-                    <td>${emp.code}</td>
-                    <td>${emp.post}</td>
-                    <td>
-                        <span class="badge ${shiftMap[emp.start_shift].class}">${emp.start_shift}</span>
+                    <td class="p-3">${emp.name}</td>
+                    <td class="p-3">${emp.code}</td>
+                    <td class="p-3">
+                        <span class="${shiftBadgeClass}">
+                            ${shiftIcon}
+                            ${emp.start_shift}
+                        </span>
                     </td>
-                    <td>${weekDays[emp.rest_day]}</td>
-                    <td>
-                        <button class="btn btn-danger btn-sm" onclick="removeEmployee(${index})">
-                            <i class="fas fa-trash"></i>
+                    <td class="p-3">${restDayName}</td>
+                    <td class="p-3">
+                        <button onclick="removeEmployee(${index})" class="text-red-600 hover:text-red-800 flex items-center">
+                            <i class="fas fa-trash-alt mr-1"></i>
+                            Remove
                         </button>
                     </td>
                 `;
@@ -652,337 +338,192 @@
             });
         }
 
+        function getShiftIcon(shift) {
+            const icons = {
+                'A': '<i class="fas fa-sun"></i>',
+                'B': '<i class="fas fa-cloud-sun"></i>',
+                'C': '<i class="fas fa-moon"></i>',
+                'G': '<i class="fas fa-briefcase"></i>',
+                'R': '<i class="fas fa-bed"></i>'
+            };
+            return icons[shift] || '';
+        }
+
+        // Remove employee
+        function removeEmployee(index) {
+            employees.splice(index, 1);
+            updateEmployeeTable();
+        }
+
+        // Generate schedule
         async function generateSchedule() {
             if (employees.length === 0) {
-                showAlert('Please add at least one employee', 'warning');
+                alert('Please add at least one employee');
                 return;
             }
 
             const month = document.getElementById('month').value;
             const year = document.getElementById('year').value;
-            
-            // Show loading indicator
-            document.getElementById('loadingText').textContent = 'Generating schedule...';
-            document.getElementById('loadingIndicator').style.display = 'flex';
 
             try {
                 const response = await fetch('/generate', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
+                        employees: employees,
                         month: month,
-                        year: year,
-                        employees: employees
+                        year: year
                     })
                 });
 
                 const data = await response.json();
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                schedule = data;
                 displaySchedule(data);
-                document.getElementById('scheduleContainer').style.display = 'block';
-                document.getElementById('shiftKeyContainer').style.display = 'block';
+                document.getElementById('scheduleDisplay').classList.remove('hidden');
                 
-                // Scroll to the schedule section
-                document.getElementById('scheduleContainer').scrollIntoView({ behavior: 'smooth' });
-                
-                showAlert('Schedule generated successfully', 'success');
+                // Scroll to schedule
+                document.getElementById('scheduleDisplay').scrollIntoView({ behavior: 'smooth' });
             } catch (error) {
-                console.error('Error:', error);
-                showAlert('Error generating schedule', 'danger');
-            } finally {
-                // Hide loading indicator
-                document.getElementById('loadingIndicator').style.display = 'none';
+                alert('Error generating schedule: ' + error.message);
             }
         }
 
+        // Display schedule
         function displaySchedule(data) {
             const table = document.getElementById('scheduleTable');
             table.innerHTML = '';
-            table.className = 'table table-bordered table-hover';
-            
-            // Store the schedule data globally so it can be exported
-            window.scheduleData = data;
-            
-            // Enable the export buttons
-            document.getElementById('exportBtn').disabled = false;
-            document.getElementById('debugBtn').disabled = false;
-            
-            // Create header rows
-            const thead = document.createElement('thead');
-            const headerRow1 = document.createElement('tr');
-            const headerRow2 = document.createElement('tr');
-            const headerRow3 = document.createElement('tr');
 
-            // Add headers
-            const mainHeader = document.createElement('th');
-            mainHeader.colSpan = 3;
-            mainHeader.innerText = 'BAGASSE YARD';
-            headerRow1.appendChild(mainHeader);
-            
-            const scheduleHeader = document.createElement('th');
-            scheduleHeader.colSpan = 10;
-            scheduleHeader.innerText = 'SHIFT SCHEDULE';
-            headerRow1.appendChild(scheduleHeader);
-            
-            const monthHeader = document.createElement('th');
-            monthHeader.colSpan = 11;
-            monthHeader.innerText = `${data.month_name.toUpperCase()} ${data.year}`;
-            headerRow1.appendChild(monthHeader);
-
-            // Add employee and date headers
-            const srHeader = document.createElement('th');
-            srHeader.innerText = 'S.R';
-            headerRow2.appendChild(srHeader);
-            
-            const nameHeader = document.createElement('th');
-            nameHeader.innerText = 'SUPERVISOR';
-            headerRow2.appendChild(nameHeader);
-            
-            const codeHeader = document.createElement('th');
-            codeHeader.innerText = 'CODE NO.';
-            headerRow2.appendChild(codeHeader);
-
-            // Empty cells for the day numbers row
-            headerRow3.innerHTML = `
-                <th></th>
-                <th></th>
-                <th></th>
-            `;
-
-            // Add date headers
+            // Get number of days in the month
             const daysInMonth = new Date(data.year, data.month, 0).getDate();
+
+            // Create header row with days
+            let headerRow = document.createElement('tr');
+            headerRow.className = 'bg-blue-900 text-white';
+            headerRow.innerHTML = '<th class="p-3 text-center">SR</th><th class="p-3">Name</th><th class="p-3">Code</th>';
+            
+            for (let day = 1; day <= daysInMonth; day++) {
+                headerRow.innerHTML += `<th class="p-3 text-center">${day}</th>`;
+            }
+            table.appendChild(headerRow);
+
+            // Create subheader row with weekday names
+            let subheaderRow = document.createElement('tr');
+            subheaderRow.className = 'bg-blue-600 text-white';
+            subheaderRow.innerHTML = `<td></td><td class="p-3">${currentPost}</td><td></td>`;
+            
             for (let day = 1; day <= daysInMonth; day++) {
                 const date = new Date(data.year, data.month - 1, day);
                 const dayName = date.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
-                
-                const dayHeader = document.createElement('th');
-                dayHeader.innerText = day;
-                headerRow2.appendChild(dayHeader);
-                
-                const dayNameHeader = document.createElement('th');
-                dayNameHeader.innerText = dayName;
-                
-                // Highlight weekends
-                if (dayName === 'SAT' || dayName === 'SUN') {
-                    dayNameHeader.style.backgroundColor = '#f97316';
-                }
-                
-                headerRow3.appendChild(dayNameHeader);
+                subheaderRow.innerHTML += `<td class="p-3 text-center">${dayName}</td>`;
             }
+            table.appendChild(subheaderRow);
 
-            thead.appendChild(headerRow1);
-            thead.appendChild(headerRow2);
-            thead.appendChild(headerRow3);
-            table.appendChild(thead);
-
-            // Create table body
-            const tbody = document.createElement('tbody');
+            // Add employee rows
             let srNo = 1;
+            for (const [name, empData] of Object.entries(data.schedule)) {
+                const row = document.createElement('tr');
+                row.className = srNo % 2 === 0 ? 'bg-gray-50' : 'bg-white';
+                
+                row.innerHTML = `
+                    <td class="p-3 text-center">${srNo}</td>
+                    <td class="p-3">${name}</td>
+                    <td class="p-3 text-center">${empData.code}</td>
+                `;
 
-            // First add supervisors
-            Object.entries(data.schedule).forEach(([name, empData]) => {
-                if (empData.post.toUpperCase() === 'SUPERVISOR') {
-                    const row = document.createElement('tr');
-                    
-                    const srCell = document.createElement('td');
-                    srCell.innerText = srNo;
-                    row.appendChild(srCell);
-                    
-                    const nameCell = document.createElement('td');
-                    nameCell.innerText = name;
-                    row.appendChild(nameCell);
-                    
-                    const codeCell = document.createElement('td');
-                    codeCell.innerText = empData.code;
-                    row.appendChild(codeCell);
-                    
-                    empData.shifts.forEach((shift, idx) => {
-                        const td = document.createElement('td');
-                        
-                        const shiftSpan = document.createElement('span');
-                        shiftSpan.className = `badge ${shiftMap[shift].class}`;
-                        shiftSpan.innerText = shift;
-                        
-                        // Create tooltip
-                        const tooltipSpan = document.createElement('span');
-                        tooltipSpan.className = 'custom-tooltip';
-                        tooltipSpan.appendChild(shiftSpan);
-                        
-                        const tooltipContent = document.createElement('span');
-                        tooltipContent.className = 'tooltip-content';
-                        tooltipContent.innerText = shiftMap[shift].text;
-                        tooltipSpan.appendChild(tooltipContent);
-                        
-                        td.appendChild(tooltipSpan);
-                        row.appendChild(td);
-                    });
-                    
-                    tbody.appendChild(row);
-                    srNo++;
-                }
-            });
+                // Add shift cells with badges
+                empData.shifts.forEach(shift => {
+                    const shiftBadgeClass = `shift-badge badge-${shift}`;
+                    const shiftIcon = getShiftIcon(shift);
+                    row.innerHTML += `
+                        <td class="p-3 text-center">
+                            <span class="${shiftBadgeClass}">
+                                ${shiftIcon}
+                                ${shift}
+                            </span>
+                        </td>
+                    `;
+                });
 
-            // Then add helpers
-            Object.entries(data.schedule).forEach(([name, empData]) => {
-                if (empData.post.toUpperCase() === 'HELPER') {
-                    const row = document.createElement('tr');
-                    
-                    const srCell = document.createElement('td');
-                    srCell.innerText = srNo;
-                    row.appendChild(srCell);
-                    
-                    const nameCell = document.createElement('td');
-                    nameCell.innerText = name;
-                    row.appendChild(nameCell);
-                    
-                    const codeCell = document.createElement('td');
-                    codeCell.innerText = empData.code;
-                    row.appendChild(codeCell);
-                    
-                    empData.shifts.forEach((shift, idx) => {
-                        const td = document.createElement('td');
-                        
-                        const shiftSpan = document.createElement('span');
-                        shiftSpan.className = `badge ${shiftMap[shift].class}`;
-                        shiftSpan.innerText = shift;
-                        
-                        // Create tooltip
-                        const tooltipSpan = document.createElement('span');
-                        tooltipSpan.className = 'custom-tooltip';
-                        tooltipSpan.appendChild(shiftSpan);
-                        
-                        const tooltipContent = document.createElement('span');
-                        tooltipContent.className = 'tooltip-content';
-                        tooltipContent.innerText = shiftMap[shift].text;
-                        tooltipSpan.appendChild(tooltipContent);
-                        
-                        td.appendChild(tooltipSpan);
-                        row.appendChild(td);
-                    });
-                    
-                    tbody.appendChild(row);
-                    srNo++;
-                }
-            });
-
-            table.appendChild(tbody);
-        }
-
-        function exportSchedule() {
-            if (!window.scheduleData) {
-                showAlert('No schedule data to export', 'warning');
-                return;
+                table.appendChild(row);
+                srNo++;
             }
-
-            // Show loading indicator
-            document.getElementById('loadingText').textContent = 'Exporting schedule...';
-            document.getElementById('loadingIndicator').style.display = 'flex';
-
-            fetch('/export', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(window.scheduleData)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.blob();
-            })
-            .then(blob => {
-                // Create a URL for the blob
-                const url = window.URL.createObjectURL(blob);
-                
-                // Create a link element and click it to download the file
-                const a = document.createElement('a');
-                a.href = url;
-                const date = new Date();
-                a.download = `duty_schedule_${window.scheduleData.month_name}_${window.scheduleData.year}.xlsx`;
-                document.body.appendChild(a);
-                a.click();
-                
-                // Clean up
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-                
-                // Hide loading indicator
-                document.getElementById('loadingIndicator').style.display = 'none';
-                showAlert('Schedule exported successfully', 'success');
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                document.getElementById('loadingIndicator').style.display = 'none';
-                showAlert('Error exporting schedule', 'danger');
-            });
-        }
-        
-        // Quick add demo data function for testing
-        function addDemoData() {
-            const demoEmployees = [
-                { name: "Rajesh Kumar", code: "EMP001", post: "SUPERVISOR", start_shift: "A", rest_day: 0 },
-                { name: "Sunil Sharma", code: "EMP002", post: "SUPERVISOR", start_shift: "B", rest_day: 0 },
-                { name: "Ajay Singh", code: "EMP003", post: "SUPERVISOR", start_shift: "C", rest_day: 0 },
-                { name: "Vikram Patel", code: "EMP004", post: "HELPER", start_shift: "A", rest_day: 0 },
-                { name: "Rahul Verma", code: "EMP005", post: "HELPER", start_shift: "B", rest_day: 0 },
-                { name: "Amit Yadav", code: "EMP006", post: "HELPER", start_shift: "C", rest_day: 0 }
-            ];
-            
-            employees = demoEmployees;
-            updateEmployeeList();
-            showAlert('Demo data added', 'info');
         }
 
+        // Export functions
         async function exportPDF() {
-            if (!window.scheduleData) {
-                showAlert('No schedule data to export', 'warning');
+            if (!schedule) {
+                alert('Please generate a schedule first');
                 return;
             }
-
-            // Show loading indicator
-            document.getElementById('loadingText').textContent = 'Generating PDF...';
-            document.getElementById('loadingIndicator').style.display = 'flex';
 
             try {
                 const response = await fetch('/export_pdf', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(window.scheduleData)
+                    body: JSON.stringify(schedule)
                 });
 
                 if (!response.ok) {
-                    throw new Error('Network response was not ok');
+                    throw new Error('Error exporting PDF');
                 }
 
                 const blob = await response.blob();
-                
-                // Create a URL for the blob
                 const url = window.URL.createObjectURL(blob);
-                
-                // Create a link element and click it to download the file
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `duty_schedule_${window.scheduleData.month_name}_${window.scheduleData.year}.pdf`;
+                a.download = `duty_schedule_${schedule.month_name}_${schedule.year}.pdf`;
                 document.body.appendChild(a);
                 a.click();
-                
-                // Clean up
                 window.URL.revokeObjectURL(url);
                 document.body.removeChild(a);
-                
-                // Hide loading indicator
-                document.getElementById('loadingIndicator').style.display = 'none';
-                showAlert('PDF generated successfully', 'success');
             } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('loadingIndicator').style.display = 'none';
-                showAlert('Error generating PDF', 'danger');
+                alert('Error exporting to PDF: ' + error.message);
             }
         }
+
+        async function exportExcel() {
+            if (!schedule) {
+                alert('Please generate a schedule first');
+                return;
+            }
+
+            try {
+                const response = await fetch('/export', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(schedule)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Error exporting Excel');
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `duty_schedule_${schedule.month_name}_${schedule.year}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } catch (error) {
+                alert('Error exporting to Excel: ' + error.message);
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', initializeDropdowns);
     </script>
 </body>
 </html>

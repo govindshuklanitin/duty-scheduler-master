@@ -10,12 +10,6 @@ from functools import lru_cache
 import logging
 from werkzeug.middleware.profiler import ProfilerMiddleware
 from io import BytesIO
-from reportlab.lib.pagesizes import landscape, A4
-from reportlab.pdfgen import canvas
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Spacer
-from reportlab.lib import colors
-from reportlab.platypus import Paragraph
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
 # Configure logging
 logging.basicConfig(
@@ -266,30 +260,18 @@ def export():
         num_days = calendar.monthrange(int(year), int(month))[1]
         last_col = get_column_letter(num_days + 3)
         
-        # Set column widths first
-        ws.column_dimensions['A'].width = 5  # S.R
-        ws.column_dimensions['B'].width = 20  # SUPERVISOR
-        ws.column_dimensions['C'].width = 10  # CODE NO.
-        
-        # Set fixed width for day columns
-        for day in range(1, num_days + 1):
-            col = get_column_letter(day + 3)
-            ws.column_dimensions[col].width = 5
-        
         # Main Header
         ws.merge_cells(f'A1:{last_col}1')
-        cell = ws['A1']
-        cell.value = 'BAGASSE YARD SHIFT SCHEDULE'
-        cell.font = title_font
-        cell.fill = header_fill
-        cell.alignment = center_alignment
+        ws['A1'] = 'BAGASSE YARD SHIFT SCHEDULE'
+        ws['A1'].font = title_font
+        ws['A1'].fill = header_fill
+        ws['A1'].alignment = center_alignment
         
         ws.merge_cells(f'A2:{last_col}2')
-        cell = ws['A2']
-        cell.value = f"{month_name.upper()} {year}"
-        cell.font = title_font
-        cell.fill = header_fill
-        cell.alignment = center_alignment
+        ws['A2'] = f"{month_name.upper()} {year}"
+        ws['A2'].font = title_font
+        ws['A2'].fill = header_fill
+        ws['A2'].alignment = center_alignment
         
         # Column Headers
         ws['A3'] = 'S.R'
@@ -366,6 +348,21 @@ def export():
         for i, (code, description) in enumerate(legend_items):
             ws[f'A{legend_row + i + 1}'] = f'{code} - {description}'
         
+        # Auto-adjust column width
+        for col in ws.columns:
+            max_length = 0
+            column = col[0].column_letter
+            for cell in col:
+                if cell.value:
+                    max_length = max(max_length, len(str(cell.value)))
+            adjusted_width = (max_length + 2)
+            ws.column_dimensions[column].width = adjusted_width
+        
+        # Set fixed width for day columns (to make them all consistent)
+        for day in range(1, num_days + 1):
+            col = get_column_letter(day + 3)
+            ws.column_dimensions[col].width = 5
+        
         # Save the Excel file
         wb.save(output)
         output.seek(0)
@@ -374,12 +371,20 @@ def export():
         process_time = (end_time - start_time).total_seconds()
         logger.info(f"Excel export completed in {process_time:.2f} seconds")
         
-        return send_file(
+        filename = f'duty_schedule_{month_name}_{year}.xlsx'
+        
+        response = send_file(
             output,
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             as_attachment=True,
-            download_name=f'duty_schedule_{month_name}_{year}.xlsx'
+            download_name=filename
         )
+        
+        # Add proper headers
+        response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
+        response.headers['Access-Control-Expose-Headers'] = 'Content-Disposition'
+        
+        return response
         
     except Exception as e:
         logger.error(f"Error exporting to Excel: {str(e)}")
@@ -414,7 +419,7 @@ def debug_data():
 @app.route('/export_pdf', methods=['POST'])
 def export_pdf():
     """
-    Export the schedule as a PDF file with attractive styling
+    Export the schedule as a PDF file
     """
     try:
         start_time = datetime.now()
@@ -435,197 +440,236 @@ def export_pdf():
         
         logger.info(f"Exporting PDF schedule for {month}/{year} with {len(schedule)} employees")
         
-        # Get the post name from the first employee (all employees will have same post)
-        first_employee = next(iter(schedule.values()))
-        post_name = first_employee.get('post', 'SUPERVISOR')
+        # First create an Excel file in memory
+        output = BytesIO()
+        
+        wb = Workbook()
+        ws = wb.active
+        
+        # Styles
+        header_fill = PatternFill(start_color="1e3a8a", end_color="1e3a8a", fill_type="solid")
+        subheader_fill = PatternFill(start_color="3b82f6", end_color="3b82f6", fill_type="solid")
+        header_font = Font(color="FFFFFF", bold=True, size=11)
+        title_font = Font(color="FFFFFF", bold=True, size=16)
+        border = Border(
+            left=Side(style='thin', color="000000"),
+            right=Side(style='thin', color="000000"),
+            top=Side(style='thin', color="000000"),
+            bottom=Side(style='thin', color="000000")
+        )
+        center_alignment = Alignment(horizontal='center', vertical='center')
+        
+        # Calculate last column letter
+        num_days = calendar.monthrange(int(year), int(month))[1]
+        last_col = get_column_letter(num_days + 3)
+        
+        # Main Header
+        ws.merge_cells(f'A1:{last_col}1')
+        ws['A1'] = 'BAGASSE YARD SHIFT SCHEDULE'
+        ws['A1'].font = title_font
+        ws['A1'].fill = header_fill
+        ws['A1'].alignment = center_alignment
+        
+        ws.merge_cells(f'A2:{last_col}2')
+        ws['A2'] = f"{month_name.upper()} {year}"
+        ws['A2'].font = title_font
+        ws['A2'].fill = header_fill
+        ws['A2'].alignment = center_alignment
+        
+        # Column Headers
+        ws['A3'] = 'S.R'
+        ws['B3'] = 'SUPERVISOR'
+        ws['C3'] = 'CODE NO.'
+        
+        # Day headers (1, 2, 3...)
+        for day in range(1, num_days + 1):
+            col = get_column_letter(day + 3)
+            ws[f'{col}3'] = str(day)
+            ws[f'{col}3'].font = header_font
+            ws[f'{col}3'].fill = subheader_fill
+            ws[f'{col}3'].alignment = center_alignment
+            ws[f'{col}3'].border = border
+            
+            # Get the weekday name (Monday, Tuesday...)
+            weekday_name = DutyScheduler.get_day_name(int(year), int(month), day)
+            ws[f'{col}4'] = weekday_name[:3].upper()  # Using first 3 letters (MON, TUE...)
+            ws[f'{col}4'].font = header_font
+            ws[f'{col}4'].fill = subheader_fill
+            ws[f'{col}4'].alignment = center_alignment
+            ws[f'{col}4'].border = border
+        
+        # Apply styles to header row
+        for col_letter in ['A', 'B', 'C']:
+            ws[f'{col_letter}3'].font = header_font
+            ws[f'{col_letter}3'].fill = subheader_fill
+            ws[f'{col_letter}3'].alignment = center_alignment
+            ws[f'{col_letter}3'].border = border
+            
+            # Weekday name row style
+            ws[f'{col_letter}4'].font = header_font
+            ws[f'{col_letter}4'].fill = subheader_fill
+            ws[f'{col_letter}4'].alignment = center_alignment
+            ws[f'{col_letter}4'].border = border
+        
+        # Fill data rows
+        row_index = 5
+        sr_no = 1
+        
+        for name, data in schedule.items():
+            ws[f'A{row_index}'] = sr_no
+            ws[f'B{row_index}'] = name
+            ws[f'C{row_index}'] = data['code']
+            
+            shifts = data.get('shifts', [])
+            for day, shift in enumerate(shifts, start=1):
+                col = get_column_letter(day + 3)
+                ws[f'{col}{row_index}'] = shift
+                ws[f'{col}{row_index}'].alignment = center_alignment
+                ws[f'{col}{row_index}'].border = border
+            
+            # Apply styles to the employee row
+            for col_letter in ['A', 'B', 'C']:
+                ws[f'{col_letter}{row_index}'].alignment = center_alignment
+                ws[f'{col_letter}{row_index}'].border = border
+            
+            row_index += 1
+            sr_no += 1
+            
+        # Add legend for shift codes
+        legend_row = row_index + 2
+        ws[f'A{legend_row}'] = 'Shift Legend:'
+        ws[f'A{legend_row}'].font = Font(bold=True)
+        
+        legend_items = [
+            ('A', 'Morning Shift (06:00-14:00)'),
+            ('B', 'Afternoon Shift (14:00-22:00)'),
+            ('C', 'Night Shift (22:00-06:00)'),
+            ('G', 'General Shift (09:00-17:00)'),
+            ('R', 'Rest Day')
+        ]
+        
+        for i, (code, description) in enumerate(legend_items):
+            ws[f'A{legend_row + i + 1}'] = f'{code} - {description}'
+        
+        # Auto-adjust column width
+        for col in ws.columns:
+            max_length = 0
+            column = col[0].column_letter
+            for cell in col:
+                if cell.value:
+                    max_length = max(max_length, len(str(cell.value)))
+            adjusted_width = (max_length + 2)
+            ws.column_dimensions[column].width = adjusted_width
+        
+        # Set fixed width for day columns (to make them all consistent)
+        for day in range(1, num_days + 1):
+            col = get_column_letter(day + 3)
+            ws.column_dimensions[col].width = 5
+        
+        # Save the Excel file to memory
+        wb.save(output)
+        output.seek(0)
+        
+        # Convert the Excel to PDF
+        from openpyxl import load_workbook
+        from reportlab.lib.pagesizes import landscape, A4
+        from reportlab.pdfgen import canvas
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+        from reportlab.lib import colors
+        from reportlab.platypus import Paragraph
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        
+        # Load workbook from the BytesIO object
+        wb = load_workbook(output)
+        ws = wb.active
         
         # Create a PDF file in memory
         pdf_output = BytesIO()
+        doc = SimpleDocTemplate(pdf_output, pagesize=landscape(A4))
         
-        # Create the PDF document with adjusted margins
-        doc = SimpleDocTemplate(
-            pdf_output,
-            pagesize=landscape(A4),
-            rightMargin=10,
-            leftMargin=10,
-            topMargin=20,
-            bottomMargin=20
-        )
+        # Extract data from Excel
+        data = []
         
-        # Get available page width and height
-        page_width = landscape(A4)[0] - doc.rightMargin - doc.leftMargin
-        page_height = landscape(A4)[1] - doc.topMargin - doc.bottomMargin
+        # Get headers first
+        headers = []
+        headers.append("S.R")
+        headers.append("SUPERVISOR")
+        headers.append("CODE NO.")
+        for day in range(1, num_days + 1):
+            headers.append(str(day))
+        data.append(headers)
         
-        elements = []
+        # Get day names
+        day_names = ["", "", ""]
+        for day in range(1, num_days + 1):
+            day_names.append(DutyScheduler.get_day_name(int(year), int(month), day)[:3].upper())
+        data.append(day_names)
         
-        # Add attractive title
+        # Get employee data
+        for emp_idx in range(5, row_index):
+            row = []
+            row.append(ws[f'A{emp_idx}'].value)  # S.R
+            row.append(ws[f'B{emp_idx}'].value)  # Name
+            row.append(ws[f'C{emp_idx}'].value)  # Code
+            
+            for day in range(1, num_days + 1):
+                col = get_column_letter(day + 3)
+                row.append(ws[f'{col}{emp_idx}'].value)  # Shift for this day
+            
+            data.append(row)
+        
+        # Create a table with the data
+        table = Table(data)
+        
+        # Style the table
+        style = TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e3a8a')),
+            ('BACKGROUND', (0, 1), (-1, 1), colors.HexColor('#3b82f6')),
+            ('TEXTCOLOR', (0, 0), (-1, 1), colors.white),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTNAME', (0, 1), (-1, 1), 'Helvetica-Bold'),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 2), (-1, -1), colors.white),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ])
+        table.setStyle(style)
+        
+        # Create a title
         styles = getSampleStyleSheet()
         title_style = ParagraphStyle(
-            'CustomTitle',
-            parent=styles['Title'],
-            fontSize=14,
-            spaceAfter=20,
-            alignment=1
+            'Title', 
+            parent=styles['Heading1'], 
+            alignment=1,  # Center
+            textColor=colors.HexColor('#1e3a8a'),
+            spaceAfter=20
         )
         
-        title = Paragraph(
-            f"<b>BAGASSE YARD SHIFT SCHEDULE - {post_name}</b><br/>{month_name.upper()} {year}",
-            title_style
+        title = Paragraph(f"BAGASSE YARD SHIFT SCHEDULE - {month_name.upper()} {year}", title_style)
+        
+        # Create a legend
+        legend_style = ParagraphStyle(
+            'Legend', 
+            parent=styles['Normal'], 
+            alignment=0,  # Left
+            spaceAfter=5
         )
-        elements.append(title)
         
-        # Prepare table data
-        num_days = calendar.monthrange(int(year), int(month))[1]
-        table_data = []
-        
-        # Headers row
-        headers = ['SR', 'NAME', 'CD']  # Shortened headers
-        headers.extend([str(day) for day in range(1, num_days + 1)])
-        table_data.append(headers)
-        
-        # Day names row
-        day_names = ['', '', '']  # Empty cells for SR, NAME, CD
-        day_names.extend([DutyScheduler.get_day_name(int(year), int(month), day)[:3] 
-                         for day in range(1, num_days + 1)])
-        table_data.append(day_names)
-
-        # Create post name cell with custom style
-        post_style = ParagraphStyle(
-            'PostStyle',
-            parent=styles['Normal'],
-            fontSize=10,  # Larger font size for post name
-            textColor=colors.white,
-            alignment=1,
-            fontName='Helvetica-Bold'
-        )
-        post_cell = Paragraph(f"<b>{post_name}</b>", post_style)
-        table_data[1][1] = post_cell  # Replace the second cell in day names row with styled post name
-
-        # Employee data rows
-        sr_no = 1
-        for name, emp_data in schedule.items():
-            row = [sr_no, name, emp_data['code']]
-            row.extend(emp_data.get('shifts', []))
-            table_data.append(row)
-            sr_no += 1
-        
-        # Calculate optimal column widths
-        name_col_width = page_width * 0.15  # 15% for name
-        sr_col_width = page_width * 0.04   # 4% for serial number
-        code_col_width = page_width * 0.04  # 4% for code
-        remaining_width = page_width - (name_col_width + sr_col_width + code_col_width)
-        day_width = remaining_width / num_days
-        
-        col_widths = [sr_col_width, name_col_width, code_col_width]
-        col_widths.extend([day_width] * num_days)
-        
-        # Create table with optimized settings
-        table = Table(table_data, colWidths=col_widths, rowHeights=[20]*len(table_data))
-        
-        # Style the table with attractive formatting
-        table_style = TableStyle([
-            # Headers
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e3a8a')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 7),
-            ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
-            
-            # Day names row with darker background for post name
-            ('BACKGROUND', (0, 1), (-1, 1), colors.HexColor('#1e3a8a')),  # Darker blue background
-            ('TEXTCOLOR', (0, 1), (-1, 1), colors.white),
-            ('FONTNAME', (0, 1), (-1, 1), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 1), (-1, 1), 6),
-            ('ALIGN', (0, 1), (-1, 1), 'CENTER'),
-            
-            # Data rows
-            ('FONTNAME', (0, 2), (-1, -1), 'Helvetica'),
-            ('FONTSIZE', (0, 2), (-1, -1), 7),  # Slightly larger font for data
-            ('ALIGN', (0, 2), (-1, -1), 'CENTER'),  # Center all data
-            
-            # Grid styling
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#cbd5e1')),  # Lighter grid color
-            ('LINEABOVE', (0, 0), (-1, 0), 1, colors.HexColor('#1e3a8a')),  # Thicker top border
-            ('LINEBELOW', (0, 1), (-1, 1), 1, colors.HexColor('#3b82f6')),  # Thicker header bottom border
-            
-            # Cell alignment and padding
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('TOPPADDING', (0, 0), (-1, -1), 1),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 1),
-            ('LEFTPADDING', (0, 0), (-1, -1), 2),
-            ('RIGHTPADDING', (0, 0), (-1, -1), 2),
-            
-            # Zebra striping for better readability
-            ('ROWBACKGROUNDS', (0, 2), (-1, -1), [colors.HexColor('#f8fafc'), colors.white]),
-        ])
-        
-        # Add shift-specific styles
-        for row in range(2, len(table_data)):
-            for col in range(3, len(table_data[row])):
-                shift = table_data[row][col]
-                if shift == 'A':
-                    table_style.add('BACKGROUND', (col, row), (col, row), colors.HexColor('#dbeafe'))
-                    table_style.add('TEXTCOLOR', (col, row), (col, row), colors.HexColor('#1e40af'))
-                elif shift == 'B':
-                    table_style.add('BACKGROUND', (col, row), (col, row), colors.HexColor('#ede9fe'))
-                    table_style.add('TEXTCOLOR', (col, row), (col, row), colors.HexColor('#5b21b6'))
-                elif shift == 'C':
-                    table_style.add('BACKGROUND', (col, row), (col, row), colors.HexColor('#fff7ed'))
-                    table_style.add('TEXTCOLOR', (col, row), (col, row), colors.HexColor('#c2410c'))
-                elif shift == 'G':
-                    table_style.add('BACKGROUND', (col, row), (col, row), colors.HexColor('#ccfbf1'))
-                    table_style.add('TEXTCOLOR', (col, row), (col, row), colors.HexColor('#0f766e'))
-                elif shift == 'R':
-                    table_style.add('BACKGROUND', (col, row), (col, row), colors.HexColor('#f1f5f9'))
-                    table_style.add('TEXTCOLOR', (col, row), (col, row), colors.HexColor('#334155'))
-                table_style.add('FONTNAME', (col, row), (col, row), 'Helvetica-Bold')
-        
-        table.setStyle(table_style)
-        elements.append(table)
-        
-        # Add legend
-        elements.append(Spacer(1, 10))
-        
-        # Create legend table with simple text
-        legend_data = [
-            ['Shift Legend:', '', '', '', ''],
-            [
-                'A - Morning (06:00-14:00)',
-                'B - Afternoon (14:00-22:00)',
-                'C - Night (22:00-06:00)',
-                'G - General (09:00-17:00)',
-                'R - Rest Day'
-            ]
+        legend_items_pdf = [
+            Paragraph("Shift Legend:", ParagraphStyle('LegendTitle', parent=legend_style, fontName='Helvetica-Bold')),
+            Paragraph("A - Morning Shift (06:00-14:00)", legend_style),
+            Paragraph("B - Afternoon Shift (14:00-22:00)", legend_style),
+            Paragraph("C - Night Shift (22:00-06:00)", legend_style),
+            Paragraph("G - General Shift (09:00-17:00)", legend_style),
+            Paragraph("R - Rest Day", legend_style)
         ]
         
-        legend_table = Table(legend_data, colWidths=[page_width/5]*5, rowHeights=[12, 15])
-        
-        # Style the legend with colors directly in the table style
-        legend_style = TableStyle([
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, -1), 8),
-            # Add matching colors and backgrounds for each shift in the legend
-            ('BACKGROUND', (0, 1), (0, 1), colors.HexColor('#dbeafe')),
-            ('TEXTCOLOR', (0, 1), (0, 1), colors.HexColor('#1e40af')),
-            ('BACKGROUND', (1, 1), (1, 1), colors.HexColor('#ede9fe')),
-            ('TEXTCOLOR', (1, 1), (1, 1), colors.HexColor('#5b21b6')),
-            ('BACKGROUND', (2, 1), (2, 1), colors.HexColor('#fff7ed')),
-            ('TEXTCOLOR', (2, 1), (2, 1), colors.HexColor('#c2410c')),
-            ('BACKGROUND', (3, 1), (3, 1), colors.HexColor('#ccfbf1')),
-            ('TEXTCOLOR', (3, 1), (3, 1), colors.HexColor('#0f766e')),
-            ('BACKGROUND', (4, 1), (4, 1), colors.HexColor('#f1f5f9')),
-            ('TEXTCOLOR', (4, 1), (4, 1), colors.HexColor('#334155')),
-        ])
-        
-        legend_table.setStyle(legend_style)
-        elements.append(legend_table)
-        
-        # Build PDF
+        # Build the PDF
+        elements = [title, table]
+        elements.extend(legend_items_pdf)
         doc.build(elements)
         
-        # Prepare for download
+        # Prepare the PDF for download
         pdf_output.seek(0)
         
         end_time = datetime.now()
